@@ -35,6 +35,7 @@ class TraverseTree{
         this->populate_seen_nodes();
         return this->seenNodes;//cant just return a value ti will create a copy of the value
     }
+    const std::unordered_set <std::string>& nodes() const { return seenNodes; }
 };
 void checkNodes(std::vector <std::string>& differentNodes, const std::unordered_set <std::string>& firstSet, const std::unordered_set <std::string>& secondSet){
     for (const auto& firstSetVal : firstSet){
@@ -46,16 +47,19 @@ void checkNodes(std::vector <std::string>& differentNodes, const std::unordered_
 
 int main(){
     TraverseTree leaderTrav{};
-    const auto& leaderNodes = leaderTrav.run();//const auto here prevents copying even ythough it returns a reference
     TraverseTree childTrav{"NonLeaderReplication"};
-    const auto& childNodes1 = childTrav.run();
+    std::thread worker1(&TraverseTree::run, &leaderTrav);
+    std::thread worker2(&TraverseTree::run, &childTrav);
+    worker1.join(); worker2.join();
+    const auto& leaderNodes = leaderTrav.nodes();
+    const auto& childNodes1 = childTrav.nodes();
     std::vector <std::string> missingNodes{};
     std::vector <std::string> extraNodes{};
-    std::thread worker1(checkNodes,std::ref(missingNodes), std::ref(leaderNodes), std::ref(childNodes1));
-    std::thread worker2(checkNodes,std::ref(extraNodes), std::ref(childNodes1) , std::ref(leaderNodes));//new implimenation creates 2 vectors and passes reference
+    std::thread worker3(checkNodes,std::ref(missingNodes), std::ref(leaderNodes), std::ref(childNodes1));
+    std::thread worker4(checkNodes,std::ref(extraNodes), std::ref(childNodes1) , std::ref(leaderNodes));//new implimenation creates 2 vectors and passes reference
     //this is important as thread takes in value as copy rather than reference
     //this prevents race condition to add
-    worker1.join(); worker2.join();
+    worker3.join(); worker4.join();
     std::cout << "missing nodes:" << "\n";
     for (const auto& toPrint: missingNodes){
         std::cout << toPrint << "\n";

@@ -11,18 +11,19 @@ class TraverseTree{
     std::unordered_set <std::string> seenNodes {};
     std::string startNode{};
     void populate_seen_nodes(){
-        std::stack <std::string> traversalStack{};
+        std::stack<std::filesystem::path> traversalStack{};
         traversalStack.push(startNode);
         while(!traversalStack.empty()){
-            std::string thisStackIteration =  traversalStack.top();
+            std::filesystem::path thisStackIteration =  traversalStack.top();
             traversalStack.pop();
             for(const auto& file: std::filesystem::directory_iterator(thisStackIteration)){
-                if (file.is_directory()){traversalStack.push(file.path().string());}
+                if (file.is_directory()){traversalStack.push(file.path());}
                 this->seenNodes.insert(file.path().filename().string());
         }}//dont need to worry about deleting stack its stored on the poulate_seen_nodes stack and reference to heapthis means that we dont have to worry about deletion
     }
     public:
     TraverseTree(std::string FolderToTraverse){
+        this->seenNodes.reserve(10000);//interesting each node we add to the set rehashes the set fully so it can results in overhead
         this->startNode = FolderToTraverse; //prevents you from changing the start node after creation (jsst protection for override)
         std::cout << "initialised the traversal" << "\n";
     }

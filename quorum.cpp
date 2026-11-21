@@ -25,6 +25,9 @@ class Quorum{
     Quorum(){
         std::cout << "Created the Qourum please run findReplicaNodes" << "\n";
     }
+    virtual ~Quorum(){
+        std::cout << "you called the destructor!!!" << "\n";//just seeing how it looks
+    }
     void findReplicaNodes(std::string startingLoc) {
         for (const auto& file : std::filesystem::directory_iterator(startingLoc)){
             if(file.is_directory() && !HiddenFolders.contains(file.path().filename())){
@@ -44,10 +47,10 @@ class Quorum{
     protected:
 };
 
-/*
 class WriteQuorum: public Quorum{
+
 };
-*/
+
 
 
 int main(){

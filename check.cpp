@@ -6,10 +6,24 @@
 #include <string>
 #include <thread>
 #include <functional>
+#include <optional>
+
+/*
+traverseTree
+1 -- first thing it does it search for nodes that are not the same
+2 -- to read from a file we need to traverse nodes so this will also aim to complete that
+^^ issue with second is we add another branch which can decrease performance as decrease in branch prediction
+also issue in readability of code and also creates nodes that are bigger insize
+i tried to help performance by using && clause to prevent comparison when there is no value as lhs evaluates to False
+it goes next without doing the harder comparison which converts path --> string and compares both which is letter by letter in c++
+ */
+
 class TraverseTree{
     private:
     std::unordered_set <std::string> seenNodes {};
     std::string startNode{};
+    std::optional<std::string> toFind;//set this to null init as we dont need this constantly
+    std::vector<std::filesystem::path> whereFind{};
     void populate_seen_nodes(){
         std::stack<std::filesystem::path> traversalStack{};
         traversalStack.push(startNode);
@@ -17,19 +31,25 @@ class TraverseTree{
             std::filesystem::path thisStackIteration =  traversalStack.top();
             traversalStack.pop();
             for(const auto& file: std::filesystem::directory_iterator(thisStackIteration)){
-                if (file.is_directory()){traversalStack.push(file.path());}
+                if (file.is_directory()){traversalStack.push(file.path());};
+                if (toFind && toFind == file.path().filename().string()){this->whereFind.push_back(file.path());}
                 this->seenNodes.insert(file.path().filename().string());
-        }}//dont need to worry about deleting stack its stored on the poulate_seen_nodes stack and reference to heapthis means that we dont have to worry about deletion
+        }}
     }
     public:
     TraverseTree(std::string FolderToTraverse){
-        this->seenNodes.reserve(10000);//interesting each node we add to the set rehashes the set fully so it can results in overhead
-        this->startNode = FolderToTraverse; //prevents you from changing the start node after creation (jsst protection for override)
+        this->seenNodes.reserve(10000);
+        this->startNode = FolderToTraverse;
         std::cout << "initialised the traversal" << "\n";
     }
-    TraverseTree(){//overload
+    TraverseTree(){
         this->startNode = "LeaderReplication";
         std::cout << "initialised the traversal" << "\n";
+    }
+    TraverseTree(std::string FolderToTraverse, std::string targetFile){
+        /*in quorum we need to traverse might aswell just adapt this class */
+        this->startNode = FolderToTraverse;
+        this->toFind = targetFile;
     }
     std::unordered_set <std::string>& run(){
         this->populate_seen_nodes();

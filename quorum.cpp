@@ -15,18 +15,19 @@ write_quorum
 read_quorum
 
 */
-static std::unordered_set <std::filesystem::path> HiddenFolders{};//just files we dont want to include like .git
-//interesting as static isnt stored in heap or main stack it has its own area where it stored in memory similar to the gloabal variable
-
+static std::unordered_set <std::filesystem::path> HiddenFolders{};
 class Quorum{
     private:
     std::vector <std::filesystem::path> locationOfQuorums{};
+    Quorum() = default;
+    int minAckRead{2};
+    int minAckWrite{3};
     public:
-    Quorum(){
-        std::cout << "Created the Qourum please run findReplicaNodes" << "\n";
-    }
-    virtual ~Quorum(){
-        std::cout << "you called the destructor!!!" << "\n";//just seeing how it looks
+    Quorum (const Quorum&) = delete;
+    Quorum& operator=(const Quorum&) = delete; 
+    static Quorum& getInstance(){
+        static Quorum instance;
+        return instance;
     }
     void findReplicaNodes(std::string startingLoc) {
         for (const auto& file : std::filesystem::directory_iterator(startingLoc)){
@@ -44,20 +45,48 @@ class Quorum{
             std::cout << loc.string() << "\n";
         }
     }
-    protected:
+    std::vector <std::filesystem::path> getReplicaQuery(std::filesystem::path& path){
+        /*
+        this method will be adapted but it will return all the nodes to write to
+        currently we write to all to get the basic system working
+        */
+        return this->locationOfQuorums;
+    }
+    /*
+    write takes in path and then we put in nodes
+    */
+    bool writeToReplica(std::filesystem::path& path){
+        //i think fs::path is a big value so by ref
+        int writes {};
+        try{
+            for(const auto& locOfReplica: this->getReplicaQuery(path)){
+            std::filesystem::copy_file(path, locOfReplica);
+            ++writes;
+        }
+        }catch(const std::exception& e){
+            std::cout << "Error: " << e.what() << "\n";
+            return false;
+        }
+        return this->minAckRead > writes;
+    }
+    /*read we only need to traverse and find within the given nodes*/
+    void readToReplica(std::string path){
+        //i think fs::path is a big value so by ref
+        try{
+            for(const auto& locOfReplica: this->getReplicaQuery(path)){
+            std::filesystem::copy_file(path, locOfReplica);
+        }
+        }
+        catch(const std::exception& e){
+            std::cout << "Error: " << e.what() << "\n";
+        }
+    }
 };
-
-class WriteQuorum: public Quorum{
-
-};
-
-
-
 int main(){
     HiddenFolders.reserve(10);//maximum 10 folders we want to hide
     HiddenFolders.insert(".vscode");
     HiddenFolders.insert(".git");
-    Quorum quorum{};
+    Quorum& quorum = quorum.getInstance();
     quorum.findReplicaNodes(".");
     quorum.prettyPrintLocationOfQuorums();
     return 0;

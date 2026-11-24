@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_set>
 #include <iostream>
+#include "check.h"
 /*
 intentions - take in a file then distribute it across the nodes (in this implimentation nodes are represented as files)
 quorum - 
@@ -45,11 +46,12 @@ class Quorum{
             std::cout << loc.string() << "\n";
         }
     }
-    std::vector <std::filesystem::path> getReplicaQuery(std::filesystem::path& path){
+    std::vector <std::filesystem::path> getReplicaQuery(std::string FileToFind){
         /*
         this method will be adapted but it will return all the nodes to write to
         currently we write to all to get the basic system working
         */
+       //assume its stored in all files
         return this->locationOfQuorums;
     }
     /*
@@ -70,11 +72,13 @@ class Quorum{
         return this->minAckRead > writes;
     }
     /*read we only need to traverse and find within the given nodes*/
-    void readToReplica(std::string path){
+    void readFromReplica(std::string nameOfFile){
+
         //i think fs::path is a big value so by ref
+        std::vector <Traverse> 
         try{
-            for(const auto& locOfReplica: this->getReplicaQuery(path)){
-            std::filesystem::copy_file(path, locOfReplica);
+            for(const auto& locOfReplica: this->getReplicaQuery(nameOfFile)){
+                
         }
         }
         catch(const std::exception& e){
@@ -82,12 +86,3 @@ class Quorum{
         }
     }
 };
-int main(){
-    HiddenFolders.reserve(10);//maximum 10 folders we want to hide
-    HiddenFolders.insert(".vscode");
-    HiddenFolders.insert(".git");
-    Quorum& quorum = quorum.getInstance();
-    quorum.findReplicaNodes(".");
-    quorum.prettyPrintLocationOfQuorums();
-    return 0;
-}

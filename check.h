@@ -24,7 +24,7 @@ class TraverseTree{
     std::unordered_set <std::string> seenNodes {};
     std::string startNode{};
     std::optional<std::string> toFind;//set this to null init as we dont need this constantly
-    std::vector<std::filesystem::path> whereFind{};
+    std::vector<std::filesystem::path> whereFind{};//do we really need multiple files where it is on a single node??
     void populate_seen_nodes(){
         std::stack<std::filesystem::path> traversalStack{};
         traversalStack.push(startNode);
@@ -67,6 +67,28 @@ void checkNodes(std::vector <std::string>& differentNodes, const std::unordered_
             differentNodes.push_back(firstSetVal);
         }
     }
+}
+
+// Compare two replica folders and print any files that differ between them
+void detectDeviated(const std::string& nodeA, const std::string& nodeB){
+    TraverseTree travA{nodeA};
+    TraverseTree travB{nodeB};
+    travA.run();
+    travB.run();
+
+    std::vector<std::string> missingFromB{};  // in A but not B
+    std::vector<std::string> extraInB{};      // in B but not A
+    checkNodes(missingFromB, travA.nodes(), travB.nodes());
+    checkNodes(extraInB,     travB.nodes(), travA.nodes());
+
+    if (missingFromB.empty() && extraInB.empty()){
+        std::cout << "[deviated] nodes match: " << nodeA << " == " << nodeB << "\n";
+        return;
+    }
+    for (const auto& f : missingFromB)
+        std::cout << "[deviated] missing from " << nodeB << ": " << f << "\n";
+    for (const auto& f : extraInB)
+        std::cout << "[deviated] extra in "    << nodeB << ": " << f << "\n";
 }
 
 /*

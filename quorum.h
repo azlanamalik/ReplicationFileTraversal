@@ -1,7 +1,8 @@
+#pragma once
+
 #include <vector>
 #include <string>
 #include <filesystem>
-#include <vector>
 #include <unordered_set>
 #include <iostream>
 #include "check.h"
@@ -46,7 +47,7 @@ class Quorum{
             std::cout << loc.string() << "\n";
         }
     }
-    std::vector <std::filesystem::path> getReplicaQuery(std::string FileToFind){
+    std::vector <std::filesystem::path> getReplicaQuery(std::string FileName){
         /*
         this method will be adapted but it will return all the nodes to write to
         currently we write to all to get the basic system working
@@ -57,29 +58,41 @@ class Quorum{
     /*
     write takes in path and then we put in nodes
     */
-    bool writeToReplica(std::filesystem::path& path){
+    bool writeToReplica(std::string fileName, std::filesystem::path path){
         //i think fs::path is a big value so by ref
         int writes {};
         try{
-            for(const auto& locOfReplica: this->getReplicaQuery(path)){
-            std::filesystem::copy_file(path, locOfReplica);
-            ++writes;
-        }
+            for(const auto& locOfReplica: this->getReplicaQuery(fileName)){
+                // destination = folder/filename, not just the folder
+                std::filesystem::path dest = locOfReplica / path.filename();
+                std::filesystem::copy_file(path, dest, std::filesystem::copy_options::overwrite_existing);
+                ++writes;
+            }
         }catch(const std::exception& e){
             std::cout << "Error: " << e.what() << "\n";
             return false;
         }
-        return this->minAckRead > writes;
+        // true means we hit the minimum acknowledgement threshold
+        return writes >= this->minAckWrite;
     }
     /*read we only need to traverse and find within the given nodes*/
     void readFromReplica(std::string nameOfFile){
-
-        //i think fs::path is a big value so by ref
-        std::vector <Traverse> 
+        //we can get the file in nodes but the issue we face is finding?
+        //could just store a directory on each write?
+        //lets just traverse first then we can create a file that keeps track of all the files in nodes with their respective loc
+        std::vector <TraverseTree> NodesToTraverse {};  
+        std::vector <std::vector< std::filesystem::path>>  whereis {};
         try{
             for(const auto& locOfReplica: this->getReplicaQuery(nameOfFile)){
-                
-        }
+                NodesToTraverse.emplace_back(locOfReplica.string(), nameOfFile);
+            }
+            for (auto& val: NodesToTraverse){
+                val.run();
+                whereis.push_back(val.getWhereStored());
+                if (!val.getWhereStored().empty()){
+                    std::cout << val.getWhereStored()[0].string() << '\n';
+                }
+            }
         }
         catch(const std::exception& e){
             std::cout << "Error: " << e.what() << "\n";
